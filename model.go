@@ -93,7 +93,7 @@ func printModel(raw json.RawMessage) {
 		} `json:"services"`
 	}
 	if err := json.Unmarshal(raw, &m); err != nil {
-		fmt.Println("model decode error:", err)
+		fmt.Fprintln(cliOut, "model decode error:", err)
 		return
 	}
 	for _, svc := range m.Services {
@@ -104,7 +104,7 @@ func printModel(raw json.RawMessage) {
 			} else if p.TypeSpec.Type == "value" {
 				extra = fmt.Sprintf(" %s..%s %s", "", "", p.TypeSpec.Unit)
 			}
-			fmt.Printf("  %4d %-3s %-24s %s%s\n", p.AbilityID, p.AccessMode, p.Code, p.TypeSpec.Type, extra)
+			fmt.Fprintf(cliOut, "  %4d %-3s %-24s %s%s\n", p.AbilityID, p.AccessMode, p.Code, p.TypeSpec.Type, extra)
 		}
 	}
 }

@@ -99,14 +99,14 @@ func (c *Client) sendByCode(devKey, code string, value interface{}) (json.RawMes
 }
 
 func printDevice(d deviceEntry, pm *productModel) {
-	fmt.Printf("device: %s\n", d.DeviceID)
-	fmt.Printf("  name=%s online=%v productId=%s\n", d.Name, d.CloudOnline, d.ProductID)
+	fmt.Fprintf(cliOut, "device: %s\n", d.DeviceID)
+	fmt.Fprintf(cliOut, "  name=%s online=%v productId=%s\n", d.Name, d.CloudOnline, d.ProductID)
 	if len(d.DataPointInfo) > 0 {
 		var dpi struct {
 			Dps map[string]interface{} `json:"dps"`
 		}
 		if err := json.Unmarshal(d.DataPointInfo, &dpi); err == nil && pm != nil {
-			fmt.Println("  --- dps (code resolved) ---")
+			fmt.Fprintln(cliOut, "  --- dps (code resolved) ---")
 			keys := make([]string, 0)
 			for k := range dpi.Dps {
 				keys = append(keys, k)
@@ -115,7 +115,7 @@ func printDevice(d deviceEntry, pm *productModel) {
 			for _, k := range keys {
 				for code, p := range pm.Props {
 					if fmt.Sprintf("%d", p.AbilityID) == k {
-						fmt.Printf("  %s (%s) = %v\n", code, k, dpi.Dps[k])
+						fmt.Fprintf(cliOut, "  %s (%s) = %v\n", code, k, dpi.Dps[k])
 					}
 				}
 			}
