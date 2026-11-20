@@ -39,3 +39,6 @@ go build -o petsnowy-cli .
 ## 詳細
 
 本ツールはAPKの静的解析と通信キャプチャ, メモリダンプ取得等の動的解析により、固有パラメータを抽出しています。リクエストはHMAC-SHA256署名と`et=0.0.1`(平文モード)で送信されます。ログインフローでは、`smartlife.m.user.username.token.get`(v2.0)でRSA公開鍵とtokenを取得し、パスワードのMD5ハッシュをRSA-PKCS1v15で暗号化、`smartlife.m.user.email.password.login`(v3.0)に`ifencrypt:1`付きで送信し`sid`を取得します。セッションは`~/.petsnowy-cli/session.json`に保存されます。起動時に全デバイスのthing modelを自動取得し、dpCodeとdpIDの対応を解決してます。署名キーはアプリバージョン7.5.0のAPKから抽出した値であり、今後の更新により失効する可能性があります。
+
+
+[![技術者倫理 遵守済み](https://img.shields.io/badge/%E6%8A%80%E8%A1%93%E8%80%85%E5%80%AB%E7%90%86-%E9%81%B5%E5%AE%88%E6%B8%88%E3%81%BF-0a0a0a?style=for-the-badge&labelColor=ffffff)](https://技術者倫理.com)
