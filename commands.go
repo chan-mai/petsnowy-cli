@@ -77,6 +77,7 @@ func usage() {
 	fmt.Fprintln(cliOut, "  light --name X on|off             light switch")
 	fmt.Fprintln(cliOut, "  sleep --name X on|off             sleep mode")
 	fmt.Fprintln(cliOut, "  send --id ID <dpsJson>            raw dp send")
+	fmt.Fprintln(cliOut, "  serve [-addr :8080] [-token T]     RESTful web API server (/api/v1)")
 	fmt.Fprintln(cliOut, "flags:")
 	fmt.Fprintln(cliOut, "  -email/-password/-countryCode     login credentials")
 	fmt.Fprintln(cliOut, "  -force                            allow risky ops (empty/factory_reset/ball_reset)")
@@ -369,6 +370,19 @@ func run(args []string, c *Client) int {
 		}
 		fmt.Fprintln(cliOut, "send ok:", string(raw))
 		return 0
+	case "serve":
+		// serve [-addr :8080] [-token SECRET] — 後置フラグ対応
+		sfs := flag.NewFlagSet("serve", flag.ContinueOnError)
+		addr := sfs.String("addr", ":8080", "listen address")
+		token := sfs.String("token", "", "bearer token (optional)")
+		if err := sfs.Parse(fs.Args()[1:]); err != nil {
+			return 2
+		}
+		if !needLogin() {
+			return 1
+		}
+		fmt.Fprintf(cliOut, "starting web api on %s\n", *addr)
+		return serveCommand(c, *addr, *token)
 	default:
 		fmt.Fprintln(cliOut, "unknown command:", cmd)
 		return 2

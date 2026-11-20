@@ -18,6 +18,24 @@ go build -o petsnowy-cli .
 
 初回は`auth login`でログインし、セッションを保存します。デバイスは表示名(`--name`)またはID(`--id`)で指定できます。`devices`/`state`/`model`/`op`系コマンドは`-format json`を付与することでJSON形式で出力します(デフォルトはtext)。危険な操作(`empty`, `factory_reset`, `ball_reset`, `filter_reset`, `desiccant_reset`)は`-force`フラグが必要です。
 
+`serve`サブコマンドでRESTfulなWeb APIサーバを起動できます。
+
+```bash
+./petsnowy-cli serve -addr :8080 -token SECRET   # -tokenは省略可
+```
+
+エンドポイント:
+
+- `GET /api/v1/health` — ヘルスチェック(認証不要)
+- `GET /api/v1/homes` — ホーム一覧
+- `GET /api/v1/devices` — デバイス一覧
+- `GET /api/v1/devices/{id}` — デバイスのdp状態
+- `GET /api/v1/devices/{id}/model` — thing model
+- `POST /api/v1/devices/{id}/op` — dpCode指定操作(`{"code":"light","value":true}`)
+- `POST /api/v1/devices/{id}/dps` — 生dp送信(`{"16":true}`)
+
+`-token`指定時は`Authorization: Bearer <token>`ヘッダーが必須です。危険な操作はbodyに`"force": true`が必要です。
+
 ## コマンド一覧
 
 ```
