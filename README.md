@@ -16,7 +16,7 @@ go build -o petsnowy-cli .
 
 ## 使い方
 
-初回は`auth login`でログインし、セッションを保存します。デバイスは表示名(`--name`)またはID(`--id`)で指定できます。危険な操作(`empty`, `factory_reset`, `ball_reset`, `filter_reset`, `desiccant_reset`)は`-force`フラグが必要です。
+初回は`auth login`でログインし、セッションを保存します。デバイスは表示名(`--name`)またはID(`--id`)で指定できます。`devices`/`state`/`model`/`op`系コマンドは`-format json`を付与することでJSON形式で出力します(デフォルトはtext)。危険な操作(`empty`, `factory_reset`, `ball_reset`, `filter_reset`, `desiccant_reset`)は`-force`フラグが必要です。
 
 ## コマンド一覧
 

@@ -20,17 +20,25 @@ var cliOut io.Writer = os.Stdout
 // 危険操作のdpCode — -forceなし拒否
 var riskyCodes = map[string]bool{"empty": true, "factory_reset": true, "ball_reset": true, "filter_reset": true, "desiccant_reset": true}
 
-// 位置によらず-name/-idフラグを抽出
-func pullDeviceFlags(args []string) ([]string, map[string]string) {
+// 位置によらず-name/-id/-formatフラグを抽出
+func pullDeviceFlags(args []string) ([]string, map[string]string, string) {
 	devFlags := map[string]string{}
+	format := ""
 	out := []string{}
 	i := 0
 	for i < len(args) {
 		a := args[i]
-		if a == "-name" || a == "--name" || a == "-id" || a == "--id" {
+		switch a {
+		case "-name", "--name", "-id", "--id":
 			key := strings.TrimPrefix(strings.TrimPrefix(a, "-"), "-")
 			if i+1 < len(args) {
 				devFlags[key] = args[i+1]
+				i += 2
+				continue
+			}
+		case "-format", "--format":
+			if i+1 < len(args) {
+				format = args[i+1]
 				i += 2
 				continue
 			}
@@ -38,7 +46,17 @@ func pullDeviceFlags(args []string) ([]string, map[string]string) {
 		out = append(out, a)
 		i++
 	}
-	return out, devFlags
+	return out, devFlags, format
+}
+
+// JSON出力ヘルパー
+func printJSON(v interface{}) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Fprintln(cliOut, "error: json encode:", err)
+		return
+	}
+	fmt.Fprintln(cliOut, string(b))
 }
 
 func usage() {
@@ -62,6 +80,7 @@ func usage() {
 	fmt.Fprintln(cliOut, "flags:")
 	fmt.Fprintln(cliOut, "  -email/-password/-countryCode     login credentials")
 	fmt.Fprintln(cliOut, "  -force                            allow risky ops (empty/factory_reset/ball_reset)")
+	fmt.Fprintln(cliOut, "  -format text|json                 output format (default text)")
 	fmt.Fprintln(cliOut, "interactive mode: help / quit")
 }
 
@@ -73,7 +92,7 @@ func run(args []string, c *Client) int {
 	countryCode := fs.String("countryCode", "1", "country code")
 	force := fs.Bool("force", false, "allow risky ops")
 
-	rest, devFlags := pullDeviceFlags(args)
+	rest, devFlags, outFormat := pullDeviceFlags(args)
 	if err := fs.Parse(rest); err != nil {
 		if err == flag.ErrHelp {
 			usage()
@@ -86,6 +105,12 @@ func run(args []string, c *Client) int {
 		return 2
 	}
 	cmd := fs.Arg(0)
+
+	jsonOut := outFormat == "json"
+	if outFormat != "" && outFormat != "json" && outFormat != "text" {
+		fmt.Fprintln(cliOut, "error: unknown format:", outFormat, "(use text or json)")
+		return 2
+	}
 
 	fail := func(format string, a ...interface{}) int {
 		fmt.Fprintf(cliOut, "error: "+format+"\n", a...)
@@ -146,6 +171,10 @@ func run(args []string, c *Client) int {
 			fmt.Fprintln(cliOut, "error:", err)
 			return 1
 		}
+		if jsonOut {
+			printJSON(map[string]interface{}{"ok": true, "code": code, "value": value, "response": string(raw)})
+			return 0
+		}
 		fmt.Fprintf(cliOut, "op ok: %s=%v -> %s\n", code, value, string(raw))
 		return 0
 	}
@@ -185,6 +214,26 @@ func run(args []string, c *Client) int {
 			return 1
 		}
 		homes, _ := c.homes()
+		if jsonOut {
+			type homeJSON struct {
+				Name    string    `json:"name"`
+				GroupID int64     `json:"groupId"`
+				Devices []devView `json:"devices"`
+			}
+			var out []homeJSON
+			for _, h := range homes {
+				devs, _ := c.devices(h.GroupID)
+				hj := homeJSON{Name: h.Name, GroupID: h.GroupID}
+				for _, d := range devs {
+					if d.CloudOnline {
+						hj.Devices = append(hj.Devices, viewDevice(d, c.modelFor(d)))
+					}
+				}
+				out = append(out, hj)
+			}
+			printJSON(out)
+			return 0
+		}
 		for _, h := range homes {
 			fmt.Fprintf(cliOut, "home: %s (gid=%d)\n", h.Name, h.GroupID)
 			devs, _ := c.devices(h.GroupID)
@@ -207,6 +256,10 @@ func run(args []string, c *Client) int {
 		if dev == nil {
 			return fail("device not found: %s", deviceKey())
 		}
+		if jsonOut {
+			printJSON(viewDevice(*dev, c.modelFor(*dev)))
+			return 0
+		}
 		printDevice(*dev, c.Models[dev.ProductID])
 		return 0
 	case "model":
@@ -224,6 +277,12 @@ func run(args []string, c *Client) int {
 		raw, err := c.thingModel(dev.ProductID, dev.ProductVer)
 		if err != nil {
 			return fail("%s", err)
+		}
+		if jsonOut {
+			var v interface{}
+			json.Unmarshal(raw, &v)
+			printJSON(v)
+			return 0
 		}
 		printModel(raw)
 		return 0
